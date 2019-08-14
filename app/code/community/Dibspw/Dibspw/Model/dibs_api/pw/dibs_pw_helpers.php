@@ -229,7 +229,7 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
      */
     function helper_dibs_obj_etc($mOrderInfo) {
         return (object)array(
-                    'sysmod'      => 'mgn1_4_2_7',
+                    'sysmod'      => 'mgn1_4_2_8',
                     'callbackfix' => $this->helper_dibs_tools_url("Dibspw/Dibspw/callback")
                 );
     }
@@ -241,23 +241,24 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
      */
     function helper_dibs_hook_callback($oOrder) {
         $oSession = Mage::getSingleton('checkout/session');
-        $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));            
-            
-        if (((int)$this->helper_dibs_tools_conf('sendmailorderconfirmation', '')) == 1) {
-                
-         // Save fee to Order object if current order has fee
-         if( $_POST['fee'] ) {
+        
+        if( $_POST['status'] == "ACCEPTED" ) {
+            $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));            
+            if (((int)$this->helper_dibs_tools_conf('sendmailorderconfirmation', '')) == 1) {
+            // Save fee to Order object if current order has fee
+            if( $_POST['fee'] ) {
                 $oOrder->setFeeAmount($_POST['fee']);
                 $oOrder->setData('fee_amount', $_POST['fee']);
                 $oOrder->save();
                 
-         }
-            $oOrder->sendNewOrderEmail();
-        }
-            
-	$this->removeFromStock((int)$_POST['orderid']);
-        $this->setOrderStatusAfterPayment();
-        $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));
+            }
+                $oOrder->sendNewOrderEmail();
+          }
+           $this->removeFromStock((int)$_POST['orderid']);
+           $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));
+    } 
+           $this->setOrderStatusAfterPayment();  
+    
     }
 }
 ?>
