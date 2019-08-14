@@ -118,7 +118,7 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
 
     public function setOrderStatusAfterPayment(){
 	$order = Mage::getModel('sales/order');
-	$order->loadByIncrementId($_REQUEST['orderid']);
+	$order->loadByIncrementId($_POST['orderid']);
 	$order->setState($this->getConfigData('order_status_after_payment'),
                          true,
                          Mage::helper('dibspw')->__('DIBSPW_LABEL_22'));

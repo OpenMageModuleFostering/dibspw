@@ -26,7 +26,12 @@ class Dibspw_Dibspw_Model_System_Config_Source_Orderstatusbefore {
         $aStatuses = Mage::getSingleton('sales/order_config')->getStates();
         $aOpts = array();
         $aOpts[] = array('value' => '', 'label' => Mage::helper('adminhtml')->__('-- Please Select --'));
-        foreach($aStatuses as $sCode => $sLabel)$aOpts[] = array('value' => $sCode, 'label' => $sLabel);
+        foreach($aStatuses as $sCode => $sLabel) {
+            if($sCode != Mage_Sales_Model_Order::STATE_COMPLETE &&
+               $sCode != Mage_Sales_Model_Order::STATE_CLOSED) {
+                $aOpts[] = array('value' => $sCode, 'label' => $sLabel);
+            }
+        }
         
         return $aOpts;
     }

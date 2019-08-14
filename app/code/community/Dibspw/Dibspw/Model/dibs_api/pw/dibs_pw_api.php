@@ -1,15 +1,16 @@
 <?php
-require_once dirname(__FILE__) . '/dibs_pw_helpers_interface.php';
-require_once dirname(__FILE__) . '/dibs_pw_helpers_cms.php';
-require_once dirname(__FILE__) . '/dibs_pw_helpers.php';
+require_once str_replace("\\", "/", dirname(__FILE__)) . '/dibs_pw_helpers_interface.php';
+require_once str_replace("\\", "/", dirname(__FILE__)) . '/dibs_pw_helpers_cms.php';
+require_once str_replace("\\", "/", dirname(__FILE__)) . '/dibs_pw_helpers.php';
 
 class dibs_pw_api extends dibs_pw_helpers {
 
     private static $sDibsTable   = 'dibs_pw_results';
-
-    private static $sErrorTmpl   = 'dibs_pw_error.tmpl';
     
-    private static $sTmplMarker  = '#';
+    private static $aTemplates   = array('folder' => 'tmpl',
+                                         'marker' => '#',
+                                         'autotranslate' => array('lbl','msg', 'sts', 'err'),
+                                         'tmpls' => array('error' => 'dibs_pw_error'));
     
     private static $sDefaultCurr = array(0 => 'EUR', 1 => '978');
 
@@ -205,7 +206,7 @@ class dibs_pw_api extends dibs_pw_helpers {
                         self::api_dibs_utf8Fix(str_replace(";","\;",$oItem->id)) . ";" .
                         self::api_dibs_round($oItem->tax);
                 }
-                unset($iTmpPrice, $sTmpName);
+                unset($iTmpPrice);
             }
 	}
         if(!empty($aData['orderid'])) $aData['yourRef'] = $aData['orderid'];
@@ -256,11 +257,11 @@ class dibs_pw_api extends dibs_pw_helpers {
                 self::api_dibs_get_tableName() . "` (
                 `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                 `orderid` varchar(100) NOT NULL DEFAULT '',
-                `status` varchar(10) NOT NULL DEFAULT '0',
+                `status` varchar(10) NOT NULL DEFAULT '',
                 `testmode` tinyint(1) unsigned NOT NULL DEFAULT '0',
                 `transaction` varchar(100) NOT NULL DEFAULT '',
                 `amount` int(10) unsigned NOT NULL DEFAULT '0',
-                `currency` smallint(3) unsigned NOT NULL DEFAULT '0',
+                `currency` varchar(3) NOT NULL DEFAULT '',
                 `fee` int(10) unsigned NOT NULL DEFAULT '0',
                 `paytype` varchar(32) NOT NULL DEFAULT '',
                 `voucheramount` int(10) unsigned NOT NULL DEFAULT '0',
@@ -317,39 +318,21 @@ class dibs_pw_api extends dibs_pw_helpers {
      * @return string 
      */
     public function api_dibs_getFatalErrorPage($iCode) {
-        return self::api_dibs_renderTemplate(self::$sErrorTmpl,
-                   array('errname'     => $this->helper_dibs_tools_lang('0', "err"),
-                         'msg_errcode' => $this->helper_dibs_tools_lang('errcode'),
+        return self::api_dibs_renderTemplate(self::$aTemplates['tmpls']['error'],
+                   array('errname_err' => 0,
+                         'errcode_msg' => 'errcode',
                          'errcode'     => $iCode,
-                         'msg_errmsg'  => $this->helper_dibs_tools_lang('errmsg'),
-                         'err_errmsg'  => $this->helper_dibs_tools_lang($iCode, "err"),
+                         'errmsg_msg'  => 'errmsg',
+                         'errmsg_err'  => $iCode,
                          'link_toshop' => $this->helper_dibs_obj_urls()->carturl,
-                         'msg_toshop'  => $this->helper_dibs_tools_lang('toshop')));
-    }
-    
-    /**
-     * Simple template loader and renderer. Used to load fallback error template.
-     * 
-     * @param string $sTmplName
-     * @param array $sParams
-     * @return string 
-     */
-    private static function api_dibs_renderTemplate($sTmplName, $sParams = array()) {
-        $sTmpl = file_get_contents(dirname(__FILE__) . self::api_dibs_getDS() . $sTmplName);
-        if($sTmpl !== FALSE) {
-            foreach($sParams as $sKey => $sVal) {
-                $sTmpl = str_replace(self::$sTmplMarker . $sKey . self::$sTmplMarker, $sVal, $sTmpl);
-            }
-        }
-        else $sTmpl = "";
-        
-        return $sTmpl;
+                         'toshop_msg'  => toshop));
     }
     
     /**
      * Processes success redirect from payment gateway.
      * 
-     * @param mixed $mOrder 
+     * @param mixed $mOrder
+     * @return int 
      */
     final public function api_dibs_action_success($mOrder) {
         $iErr = $this->api_dibs_checkMainFields($mOrder);
@@ -358,7 +341,7 @@ class dibs_pw_api extends dibs_pw_helpers {
                                                   'success_error' => $iErr));
         }
         
-        return $iErr;
+        return (int)$iErr;
     }
     
     /**
@@ -384,11 +367,11 @@ class dibs_pw_api extends dibs_pw_helpers {
             exit((string)$iErr);
         }
         
-   	$sQuery = "SELECT `status` FROM `" . $this->helper_dibs_tools_prefix() . 
-                                             self::api_dibs_get_tableName() . "` 
-                   WHERE `orderid` = '" . self::api_dibs_sqlEncode($_POST['orderid']) . "' 
-                   LIMIT 1;";
-        if($this->helper_dibs_db_read_single($sQuery, 'status') == 0) {
+   	$sResult = $this->helper_dibs_db_read_single("SELECT `status` FROM `" . 
+                   $this->helper_dibs_tools_prefix() . self::api_dibs_get_tableName() . 
+                   "` WHERE `orderid` = '" . self::api_dibs_sqlEncode($_POST['orderid']) . 
+                   "'  LIMIT 1;", 'status');
+        if(empty($sResult)) {
             $aFields = array('callback_action' => 1);
             $aResponse = $_POST;
             $iPayMethod = $this->api_dibs_get_method(TRUE);
@@ -405,7 +388,7 @@ class dibs_pw_api extends dibs_pw_helpers {
                 }
             }
             $aFields['ext_info'] = serialize($aResponse);
-            unset($aResponse, $sDbKey, $sPostKey);
+            unset($aResponse);
             $this->api_dibs_updateResultRow($aFields);
             
             if(method_exists($this, 'helper_dibs_hook_callback') && 
@@ -436,6 +419,31 @@ class dibs_pw_api extends dibs_pw_helpers {
                  LIMIT 1;"
             );
         }
+    }
+    
+    /**
+     * Simple template loader and renderer. Used to load fallback error template.
+     * 
+     * @param string $sTmplName
+     * @param array $sParams
+     * @return string 
+     */
+    private function api_dibs_renderTemplate($sTmplName, $sParams = array()) {
+        $sTmpl = file_get_contents(str_replace("\\", "/", dirname(__FILE__)) . "/" . 
+                                   self::$aTemplates['folder'] . "/" . $sTmplName);
+        if($sTmpl !== FALSE) {
+            foreach($sParams as $sKey => $sVal) {
+                $sValueType = substr($sKey, -3);
+                if(in_array($sValueType, self::$aTemplates['autotranslate'])) {
+                    $sVal = $this->helper_dibs_tools_lang($sVal, $sValueType);
+                }
+                $sTmpl = str_replace(self::$aTemplates['marker'] . $sKey . self::$aTemplates['marker'], 
+                                     $sVal, $sTmpl);
+            }
+        }
+        else $sTmpl = "";
+        
+        return $sTmpl;
     }
     
     /** DIBS API TOOLS START **/
@@ -553,15 +561,6 @@ class dibs_pw_api extends dibs_pw_helpers {
                $sText : utf8_encode($sText);
     }
 
-    /**
-     *  Returns DIRECTORY_SEPARATOR value if it exists in PHP scope and UNIX separator otherwise.
-     * 
-     * @return string 
-     */
-    final public static function api_dibs_getDS() {
-        return defined("DIRECTORY_SEPARATOR") ? DIRECTORY_SEPARATOR : "/"; 
-    }
-    
     /**
      * Detects mobile device by user-agent and received headers.
      * 

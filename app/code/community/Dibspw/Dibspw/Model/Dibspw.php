@@ -20,7 +20,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-require_once dirname(__FILE__) . '/dibs_api/pw/dibs_pw_api.php';
+require_once  str_replace("\\", "/", dirname(__FILE__)) . '/dibs_api/pw/dibs_pw_api.php';
 
 class Dibspw_Dibspw_Model_Dibspw extends dibs_pw_api {
 
