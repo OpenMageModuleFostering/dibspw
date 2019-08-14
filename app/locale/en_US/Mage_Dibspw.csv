@@ -15,7 +15,7 @@
 "DIBSPW_LABEL_15","Country"
 "DIBSPW_LABEL_16","Acquirer"
 "DIBSPW_LABEL_17","3-D Secure"
-"DIBSPW_LABEL_18","You can go to DIBS administration to manage this payment"
+"DIBSPW_LABEL_18","You can go to DIBS administration to manage this payment, or you can caputre, refud cancel order from Magento admin"
 "DIBSPW_LABEL_19","There is not registered any payment for this order yet!"
 "DIBSPW_LABEL_20","Customer has cancelled the payment process - DIBS Payment Services (www.dibspayment.com)"
 "DIBSPW_LABEL_21","'Callback' received from DIBS Payment Services (www.dibspayment.com)"

@@ -50,7 +50,9 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
         $this->loadLayout();
         if($oOrder->getPayment() !== FALSE) {
             // Create the POST to DIBS (Inside Magento Checkout)
-            $this->getLayout()->getBlock('content')->append($this->getLayout()->createBlock('dibspw/redirect'));
+            //$this->getLayout()->getBlock('content')->append($this->getLayout()->createBlock('dibspw/redirect'));
+            
+            $this->getLayout()->getBlock('content')->append($this->getLayout()->createBlock('core/template','dibspw_redirect')->setTemplate('dibspw/dibspw/redirect.phtml'));
                 
             // Create the POST to DIBS (In Separate "Blank" Window)
             // $this->getResponse()->setBody($this->getLayout()->createBlock('Dibspw/redirect')->toHtml());
@@ -84,9 +86,14 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
         $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));
         
         $iOrderId = (int)$this->getRequest()->getPost('orderid');
+        
         if(!empty($iOrderId)) {
             $oOrder = Mage::getModel('sales/order');
             $oOrder->loadByIncrementId($iOrderId);
+            // Clear cart 
+            $quote = Mage::getModel("sales/quote")->load($oSession->getQuote()->getId());
+            $quote->setIsActive(false);
+            $quote->delete();
             if(!is_null($oOrder)) {
                 $iResult = $this->oDibsModel->api_dibs_action_success($oOrder);
        
@@ -95,8 +102,7 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
                     exit;
                 }
                 else {
-                    Mage::app()->getFrontController()->getResponse()->setRedirect(
-                        $this->oDibsModel->helper_dibs_tools_url('checkout/onepage/success')
+                    Mage::app()->getFrontController()->getResponse()->setRedirect($this->oDibsModel->helper_dibs_tools_url('checkout/onepage/success')
                     );
                 }
             }
@@ -118,6 +124,8 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
      */
     public function callbackAction() {
         $oOrder = Mage::getModel('sales/order');
+        $result = $oOrder->loadByIncrementId($_POST['orderid']);
+        $result->getPayment()->setIsTransactionClosed(1);
         $this->oDibsModel->api_dibs_action_callback($oOrder);
     }
     

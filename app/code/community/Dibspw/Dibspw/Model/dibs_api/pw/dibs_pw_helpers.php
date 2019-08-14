@@ -216,7 +216,7 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
         return (object)array(
                     'acceptreturnurl' => "Dibspw/Dibspw/success",
                     'callbackurl'     => "Dibspw/Dibspw/callback",
-                    'cancelreturnurl' => "Dibspw/Dibspw/cancel",
+                    'cancelreturnurl' => "checkout/onepage/",
                     'carturl'         => "customer/account/index"
                 );
     }

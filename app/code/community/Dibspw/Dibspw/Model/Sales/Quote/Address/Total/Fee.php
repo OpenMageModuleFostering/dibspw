@@ -4,6 +4,8 @@ class Excellence_Fee_Model_Sales_Quote_Address_Total_Fee extends Mage_Sales_Mode
 
 	public function collect(Mage_Sales_Model_Quote_Address $address)
 	{
+		
+           
 		parent::collect($address);
 
 		$this->_setAmount(0);
@@ -34,10 +36,12 @@ class Excellence_Fee_Model_Sales_Quote_Address_Total_Fee extends Mage_Sales_Mode
 			$address->setGrandTotal($address->getGrandTotal() + $address->getFeeAmount());
 			$address->setBaseGrandTotal($address->getBaseGrandTotal() + $address->getBaseFeeAmount());
 		}
+        
 	}
 
 	public function fetch(Mage_Sales_Model_Quote_Address $address)
 	{
+		    
 		$amt = $address->getFeeAmount();
 		$address->addTotal(array(
 				'code'=>$this->getCode(),
@@ -45,5 +49,6 @@ class Excellence_Fee_Model_Sales_Quote_Address_Total_Fee extends Mage_Sales_Mode
 				'value'=> $amt
 		));
 		return $this;
+        
 	}
 }

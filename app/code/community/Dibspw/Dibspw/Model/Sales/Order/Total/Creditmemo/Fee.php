@@ -1,7 +1,7 @@
 <?php
 class Dibspw_Dibspw_Model_Sales_Order_Total_Creditmemo_Fee extends Mage_Sales_Model_Order_Creditmemo_Total_Abstract
 {
-	/*public function collect(Mage_Sales_Model_Order_Creditmemo $creditmemo)
+	public function collect(Mage_Sales_Model_Order_Creditmemo $creditmemo)
 	{
 		$order = $creditmemo->getOrder();
 		$feeAmountLeft = $order->getFeeAmountInvoiced() - $order->getFeeAmountRefunded();
@@ -13,5 +13,5 @@ class Dibspw_Dibspw_Model_Sales_Order_Total_Creditmemo_Fee extends Mage_Sales_Mo
 			$creditmemo->setBaseFeeAmount($basefeeAmountLeft);
 		}
 		return $this;
-	}*/
+	}
 }

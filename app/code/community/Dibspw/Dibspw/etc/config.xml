@@ -24,7 +24,7 @@
 <config>
     <modules>
         <Dibspw_Dibspw>
-            <version>4.2.2</version>
+            <version>4.2.3</version>
             <depends>
                 <Mage_Paygate />
             </depends>
@@ -54,11 +54,19 @@
             <dibspw>
             	<class>Dibspw_Dibspw_Block</class>
             </dibspw>
+            
+            <payment> 
+               <rewrite>  
+            		<info>Dibspw_Dibspw_Block_Info</info>
+            	</rewrite>	
+            </payment>
+            
         </blocks>
     	<models>
             <dibspw>
     		<class>Dibspw_Dibspw_Model</class>
                 <resourceModel>dibspw_mysql4</resourceModel>
+            
             </dibspw>
             <dibspw_mysql4>
                 <class>Dibspw_Dibspw_Model_Mysql4</class>
@@ -68,7 +76,18 @@
                     </api_debug>
                 </entities>
             </dibspw_mysql4>
-    	</models>
+             <sales>
+                 <rewrite>
+                    <service_quote>Dibspw_Dibspw_Model_Service_Quote</service_quote>
+                 </rewrite>  
+             </sales>
+             
+             <checkout>
+                <rewrite> 
+                        <type_onepage>First_Module_Model_Checkout_Type_Onepage</type_onepage>
+                </rewrite>
+             </checkout>
+      </models>
     	<helpers>
     		<dibspw>
                     <class>Dibspw_Dibspw_Helper</class>
@@ -154,9 +173,9 @@
 	  	<sendmailorderconfirmation>1</sendmailorderconfirmation>
                 <dibspwlogos>DIBS</dibspwlogos>
                 <handlestock>1</handlestock>
-				<DIBSPW_distr>empty</DIBSPW_distr>
-     			<DIBSPW_bundle>1</DIBSPW_bundle>
-	            <sort_order>0</sort_order>
+		<DIBSPW_distr>empty</DIBSPW_distr>
+     		<DIBSPW_bundle>1</DIBSPW_bundle>
+	        <sort_order>0</sort_order>
                 <allowspecific>0</allowspecific>
                 <min_order_total>0.01</min_order_total>
             </Dibspw>

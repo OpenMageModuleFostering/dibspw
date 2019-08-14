@@ -18,7 +18,7 @@ class Dibspw_Dibspw_Model_Sales_Order_Total_Order_Fee extends Mage_Sales_Model_O
 		}
 			
 		$invoice->setFeeAmount($feeAmountLeft);
-		$invoice->setBaseFeeAmount($baseFeeAmountLeft); echo "Hello mans!!";
+		$invoice->setBaseFeeAmount($baseFeeAmountLeft);
 		return $this;
 	}
 }

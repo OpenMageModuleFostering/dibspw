@@ -1,5 +1,5 @@
 <?php
-/**
+ /**
  * Magento
  *
  * NOTICE OF LICENSE
@@ -26,6 +26,11 @@
  */
 
 class Dibspw_Dibspw_Block_Info extends Mage_Payment_Block_Info {
+        
+    public function __construct() {
+        parent::__construct();
+    }
+    
     
     /**
      * Render the value as an array
@@ -46,7 +51,7 @@ class Dibspw_Dibspw_Block_Info extends Mage_Payment_Block_Info {
                  $this->getMethod()->cms_dibs_getAdminOrderInfo() :
                  $this->getMethod()->cms_dibs_getOrderInfo();
         foreach($aData as $sKey => $sVal) $oDataObj->setData($sKey, $sVal);
-        
 	return $oDataObj;
     }
+   
 }
