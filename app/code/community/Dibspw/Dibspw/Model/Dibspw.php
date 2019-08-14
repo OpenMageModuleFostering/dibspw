@@ -47,5 +47,7 @@ class Dibspw_Dibspw_Model_Dibspw extends dibs_pw_api {
     
     public function getOrderPlaceRedirectUrl() {
         return Mage::getUrl('Dibspw/Dibspw/redirect', array('_secure' => true));
+        
+        
     }
 }

@@ -122,6 +122,11 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
 	$order->setState($this->getConfigData('order_status_after_payment'),
                          true,
                          Mage::helper('dibspw')->__('DIBSPW_LABEL_22'));
+    
+    // Add fee to sales_order_table, if order has fee
+    if( $_POST['fee'] ) {
+        $order->setData('fee_amount', $_POST['fee']);
+    }
 
 	$order->save();
     }

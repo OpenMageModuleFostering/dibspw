@@ -26,7 +26,6 @@ class Dibspw_Dibspw_Model_System_Config_Source_Lang {
         return array(
             array('value' => 'da_DK', 'label' => Mage::helper('adminhtml')->__('Danish')),
             array('value' => 'en_UK', 'label' => Mage::helper('adminhtml')->__('English')),
-            array('value' => 'fi_FIN', 'label' => Mage::helper('adminhtml')->__('Finnish')),
             array('value' => 'nb_NO', 'label' => Mage::helper('adminhtml')->__('Norwegian')),
             array('value' => 'sv_SE', 'label' => Mage::helper('adminhtml')->__('Swedish')),
         );

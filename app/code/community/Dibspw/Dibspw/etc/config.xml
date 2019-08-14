@@ -24,14 +24,33 @@
 <config>
     <modules>
         <Dibspw_Dibspw>
-            <version>4.1.9</version>
+            <version>4.2.1</version>
             <depends>
                 <Mage_Paygate />
             </depends>
         </Dibspw_Dibspw>
     </modules>
     <global>
+       <sales>
+          <order_invoice>
+                <totals>
+                    <dibspw>
+                        <class>dibspw/sales_order_total_invoice_fee</class>
+                        <after>subtotal</after>
+                        <before>tax</before>
+                    </dibspw>
+                </totals>
+              </order_invoice>
+      </sales>
     	<blocks>
+      <adminhtml>
+                <rewrite>
+                    <sales_order_totals>Dibspw_Dibspw_Block_Adminhtml_Sales_Order_Totals</sales_order_totals>
+                    <sales_order_invoice_totals>Dibspw_Dibspw_Block_Adminhtml_Sales_Order_Invoice_Totals</sales_order_invoice_totals>
+                    <sales_order_creditmemo_totals>Dibspw_Dibspw_Block_Adminhtml_Sales_Order_Creditmemo_Totals</sales_order_creditmemo_totals>
+                </rewrite>
+      </adminhtml>
+
             <dibspw>
             	<class>Dibspw_Dibspw_Block</class>
             </dibspw>
@@ -86,6 +105,17 @@
                 </args>
             </Dibspw>
         </routers>
+        
+       <layout>
+            <updates>
+                <dibspw>
+                    <file>dibspw.xml</file>
+                </dibspw>
+            </updates>
+        </layout>
+        
+        
+        
     </frontend>
     <frontend>
         <translate>

@@ -31,6 +31,7 @@ $installer->startSetup();
 $sTableName_CoreResource = Mage::getSingleton('core/resource')->getTableName('core_resource');
 $sTableName_SalesFlatOrderPayment = Mage::getSingleton('core/resource')->getTableName('sales_flat_order_payment');
 $sTablePrefix = Mage::getConfig()->getTablePrefix();
+$flatOrderTable = $this->getTable('sales/order');
 $installer->run("
 	delete from " . $sTableName_CoreResource . " where code = 'dibspw_setup';
 	CREATE TABLE IF NOT EXISTS `" . $sTablePrefix . "dibspw_results` (
@@ -59,5 +60,10 @@ $installer->run("
                 KEY `orderid` (`orderid`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 	UPDATE " . $sTableName_SalesFlatOrderPayment . " SET method='Dibspw' WHERE method='dibspw_standard';
+        
 ");
-$installer->endSetup();
+
+ if( !$installer->getConnection()->tableColumnExists($flatOrderTable, 'fee_amount') ) {
+   $installer->getConnection()->addColumn($flatOrderTable, 'fee_amount', 'int(11)' ); 
+ } 
+$installer->endSetup(); 

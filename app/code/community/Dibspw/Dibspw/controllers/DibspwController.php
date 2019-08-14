@@ -42,12 +42,11 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
      * Adds comment to order history if it's not added before.
      */
     public function redirectAction(){
-      	$oSession = Mage::getSingleton('checkout/session');
+        $oSession = Mage::getSingleton('checkout/session');
       	$oSession->setDibspwQuoteId($oSession->getQuoteId());
 
         $oOrder = Mage::getModel('sales/order');
         $oOrder->loadByIncrementId($oSession->getLastRealOrderId());
-        
         $this->loadLayout();
         if($oOrder->getPayment() !== FALSE) {
             // Create the POST to DIBS (Inside Magento Checkout)
@@ -90,7 +89,8 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
             $oOrder->loadByIncrementId($iOrderId);
             if(!is_null($oOrder)) {
                 $iResult = $this->oDibsModel->api_dibs_action_success($oOrder);
-                if(!empty($iResult)) {
+       
+	          if(!empty($iResult)) {
                     echo $this->oDibsModel->api_dibs_getFatalErrorPage($iResult);
                     exit;
                 }
