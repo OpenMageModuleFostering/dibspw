@@ -3,8 +3,7 @@
     "type": "magento-module",
     "license": "Open-Software-License-(OSL)",
     "homepage": "",
-    "description": "Accept all types of payments from DIBS - Secure Internet Payment Service Provider;&#xD;
-DIBS Payment Window and Mobile Payment Window integration.",
+    "description": "Accept all types of payments from DIBS - Secure Internet Payment Service Provider",
     "authors": [
     {
         "name": "DIBS A\/S",

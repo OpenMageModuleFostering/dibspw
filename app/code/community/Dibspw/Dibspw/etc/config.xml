@@ -24,7 +24,7 @@
 <config>
     <modules>
         <Dibspw_Dibspw>
-            <version>4.1.7</version>
+            <version>4.1.8</version>
             <depends>
                 <Mage_Paygate />
             </depends>
@@ -127,8 +127,9 @@
 	  	<sendmailorderconfirmation>1</sendmailorderconfirmation>
                 <dibspwlogos>DIBS</dibspwlogos>
                 <handlestock>1</handlestock>
-		<DIBSPW_distr>empty</DIBSPW_distr>
-                <sort_order>0</sort_order>
+				<DIBSPW_distr>empty</DIBSPW_distr>
+     			<DIBSPW_bundle>1</DIBSPW_bundle>
+	            <sort_order>0</sort_order>
                 <allowspecific>0</allowspecific>
                 <min_order_total>0.01</min_order_total>
             </Dibspw>

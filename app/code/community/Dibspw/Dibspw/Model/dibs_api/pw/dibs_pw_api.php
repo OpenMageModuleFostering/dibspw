@@ -142,7 +142,7 @@ class dibs_pw_api extends dibs_pw_helpers {
         if(count($oOrder->etc) > 0) {
             foreach($oOrder->etc as $sKey => $sVal) $aData['s_' . $sKey] = $sVal;
         }
-        array_walk($aData, create_function('&$val', '$val = trim($val);'));
+        //array_walk($aData, create_function('&$val', '$val = trim($val);'));
         $sMAC = $this->api_dibs_calcMAC($aData, $this->helper_dibs_tools_conf('HMAC'));
         if(!empty($sMAC)) $aData['MAC'] = $sMAC;
         
@@ -184,8 +184,10 @@ class dibs_pw_api extends dibs_pw_helpers {
     private function api_dibs_invoiceFields(&$aData, $mOrderInfo) {
         $oOrder = $this->api_dibs_invoiceOrderObject($mOrderInfo);
         foreach($oOrder->addr as $sKey => $sVal) {
-            $sVal = trim($sVal);
-            if(!empty($sVal)) $aData[$sKey] = self::api_dibs_utf8Fix($sVal);
+            //$sVal = trim($sVal);
+            //if(!empty($sVal)) $aData[$sKey] = self::api_dibs_utf8Fix($sVal);
+            $aData[$sKey] = $sVal;
+            
         }
         $oOrder->items[] = $oOrder->ship;
         if(isset($oOrder->items) && count($oOrder->items) > 0) {
@@ -448,9 +450,23 @@ class dibs_pw_api extends dibs_pw_helpers {
             $sData = '';
             if(isset($aData['MAC'])) unset($aData['MAC']);
             ksort($aData);
+            $tData = $aData;
             foreach($aData as $sKey => $sVal) {
                 $sData .= '&' . $sKey . '=' . (($bUrlDecode === TRUE) ? urldecode($sVal) : $sVal);
             }
+            
+           
+               $str="";
+               $str .= "array(";
+        
+                foreach( $tData as $k=>$v ){
+                    $str .= '"'.$k.'" =>'.'"'.$v.'"'.',';
+                }
+                $str .= ")";
+                $fl = fopen("D:\\itwillbegood.txt" ,"w+");
+                fputs( $fl,  $str);
+            
+            
             $sMAC = hash_hmac('sha256', ltrim($sData, '&'), self::api_dibs_hextostr($sHMAC));
         }
         

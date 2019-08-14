@@ -102,7 +102,18 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
      */
     function helper_dibs_obj_items($mOrderInfo) {
         $aItems = array();
+        $spitBundle = false;
+        if($this->helper_dibs_tools_conf('bundle') == 'yes') {
+           $spitBundle = true;
+        }
+      
         foreach($mOrderInfo->getAllItems() as $oItem) {
+            
+            // Exclude bundel or not 
+            if($spitBundle == false && $oItem->getParentItem() OR 
+            ($spitBundle == true &&    $oItem->getChildrenItems())) continue;
+            
+           
             $aItems[] = (object)array(
                 'id'    => $oItem->getProductId(),
                 'name'  => $oItem->getName(),
@@ -111,7 +122,20 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
                 'qty'   => $oItem->getQtyOrdered(),
                 'tax'   => 0
             );
+          
+            
+            //!$oItem->getParentItem()
+            //getChildrenItems()
+           //var_dump($oItem);
         }
+        
+        
+        //var_dump($mOrderInfo->getAllItems());
+        
+        //echo $this->helper_dibs_tools_conf('bundle');
+        
+        //exit;
+        
         
         $fDiscount = $mOrderInfo->getDiscountAmount();
         if(!empty($fDiscount)) {
@@ -213,7 +237,7 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
      */
     function helper_dibs_obj_etc($mOrderInfo) {
         return (object)array(
-                    'sysmod'      => 'mgn1_4_1_7',
+                    'sysmod'      => 'mgn1_4_1_8',
                     'callbackfix' => $this->helper_dibs_tools_url("Dibspw/Dibspw/callback")
                 );
     }
