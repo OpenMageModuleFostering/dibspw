@@ -38,6 +38,12 @@ class Dibspw_Dibspw_Model_Dibspw extends dibs_pw_api {
     protected $_canSaveCc = false;
     protected $_isInitializeNeeded = true;
 
+    /**
+     * Payment method code
+     *
+     * @var string
+     */
+ 
     
       public function authorize(Varien_Object $payment, $amount) {
         return $this;

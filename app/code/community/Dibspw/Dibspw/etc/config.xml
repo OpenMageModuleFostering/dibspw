@@ -24,7 +24,7 @@
 <config>
     <modules>
         <Dibspw_Dibspw>
-            <version>4.2.5</version>
+            <version>4.2.6</version>
             <depends>
                 <Mage_Paygate />
             </depends>
@@ -67,13 +67,6 @@
             <dibspw>
             	<class>Dibspw_Dibspw_Block</class>
             </dibspw>
-            
-            <payment> 
-               <rewrite>  
-            		<info>Dibspw_Dibspw_Block_Info</info>
-            	</rewrite>	
-            </payment>
-            
         </blocks>
     	<models>
             <dibspw>
