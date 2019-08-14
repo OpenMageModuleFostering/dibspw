@@ -88,7 +88,7 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
     
         return (object)array(
                     'orderid'  => $mOrderInfo->getRealOrderId(),
-                    'amount'   => $mOrderInfo->getTotalDue(),
+                    'amount'   => $mOrderInfo->getGrandTotal(),
                     'currency' => $mOrderInfo->getOrderCurrency()->getCode()
                                   
         );
