@@ -1,0 +1,17 @@
+{
+    "name": "OpenMageModuleFostering/Dibspw",
+    "type": "magento-module",
+    "license": "OSL-v3.0",
+    "homepage": "",
+    "description": "Accept all types of payments from DIBS - Secure Internet Payment Service Provider.
+DIBS Payment Window and Mobile Payment Window integration.",
+    "authors": [
+    {
+        "name": "DIBS A\/S",
+        "email": "info@dibs.dk"
+    }
+],
+    "suggest": {
+        "magento-hackathon/magento-composer-installer": "*"
+    }
+}
