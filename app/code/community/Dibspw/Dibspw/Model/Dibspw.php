@@ -31,7 +31,7 @@ class Dibspw_Dibspw_Model_Dibspw extends dibs_pw_api {
         parent::validate();
         $sCurrencyCode = Mage::getSingleton('checkout/session')->getQuote()->getBaseCurrencyCode();
         if (!array_key_exists($sCurrencyCode, dibs_pw_api::api_dibs_get_currencyArray())) {
-            Mage::throwException(Mage::helper('Dibspw')->__('Selected currency code (' . 
+            Mage::throwException(Mage::helper('dibspw')->__('Selected currency code (' . 
                                                 $sCurrencyCode . ') is not compatabile with Dibs'));
         }
         return $this;

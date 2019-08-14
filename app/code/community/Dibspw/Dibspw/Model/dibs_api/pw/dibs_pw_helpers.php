@@ -84,14 +84,13 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
         if($bResponse === TRUE) {
             $mOrderInfo->loadByIncrementId((int)$_POST['orderid']);
         }
-        
+    
         return (object)array(
                     'orderid'  => $mOrderInfo->getRealOrderId(),
                     'amount'   => $mOrderInfo->getTotalDue(),
-                    'currency' => $this->api_dibs_get_currencyValue(
-                                       $mOrderInfo->getOrderCurrency()->getCode()
-                                  )
-               );
+                    'currency' => $mOrderInfo->getOrderCurrency()->getCode()
+                                  
+        );
     }
     
     /**
@@ -106,13 +105,11 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
         if($this->helper_dibs_tools_conf('bundle') == 'yes') {
            $spitBundle = true;
         }
-      
+        
         foreach($mOrderInfo->getAllItems() as $oItem) {
-            
-            // Exclude bundel or not 
-            if($spitBundle == false && $oItem->getParentItem() OR 
-            ($spitBundle == true &&    $oItem->getChildrenItems())) continue;
-            
+          
+            // Just exclude chilren from bundle products
+            if($oItem->getParentItem()) continue;
            
             $aItems[] = (object)array(
                 'id'    => $oItem->getProductId(),
@@ -123,19 +120,7 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
                 'tax'   => 0
             );
           
-            
-            //!$oItem->getParentItem()
-            //getChildrenItems()
-           //var_dump($oItem);
         }
-        
-        
-        //var_dump($mOrderInfo->getAllItems());
-        
-        //echo $this->helper_dibs_tools_conf('bundle');
-        
-        //exit;
-        
         
         $fDiscount = $mOrderInfo->getDiscountAmount();
         if(!empty($fDiscount)) {
@@ -152,6 +137,11 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
         $fTaxTotal = 0;
         $aTaxes = $mOrderInfo->getFullTaxInfo();
         foreach($aTaxes as $aTax) if(isset($aTax['amount'])) $fTaxTotal += $aTax['amount'];
+       
+        // Add  HiddenTaxAmount to whole Tax amount if we calculate Tax After Discount to avoid amount errors.
+        if( (bool)Mage::getStoreConfig('tax/calculation/apply_after_discount', null) ) {
+            $fTaxTotal +=  $mOrderInfo->getHiddenTaxAmount();
+        }
         $aItems[] = (object)array(
             'id'    => 'tax0',
             'name'  => $this->helper_dibs_tools_lang('tax_total'),
@@ -162,6 +152,7 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
         );
         
         return $aItems;
+        
     }
     
     /**
@@ -190,7 +181,9 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
     function helper_dibs_obj_addr($mOrderInfo) {
         $aShipping = $mOrderInfo->getShippingAddress();
         $aBilling  = $mOrderInfo->getBillingAddress();
-
+        
+        $aShipping['street'] = str_replace("\n", " ", $aShipping['street']);
+        $aBilling['street'] =  str_replace("\n", " ", $aBilling['street']);
         return (object)array(
             'shippingfirstname'  => $aShipping['firstname'],
             'shippinglastname'   => $aShipping['lastname'],
@@ -199,7 +192,6 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
             'shippingaddress2'   => $aShipping['street'],
             'shippingaddress'    => $aShipping['country_id'] . " " . 
                                     $aShipping['region'],
-            
             'billingfirstname'   => $aBilling['firstname'],
             'billinglastname'    => $aBilling['lastname'],
             'billingpostalcode'  => $aBilling['postcode'],
@@ -207,7 +199,6 @@ class dibs_pw_helpers extends dibs_pw_helpers_cms implements dibs_pw_helpers_int
             'billingaddress2'    => $aBilling['street'],
             'billingaddress'     => $aBilling['country_id'] . " " . 
                                     $aBilling['region'],
-            
             'billingmobile'      => $aBilling['telephone'],
             'billingemail'       => $mOrderInfo['customer_email']
         );
