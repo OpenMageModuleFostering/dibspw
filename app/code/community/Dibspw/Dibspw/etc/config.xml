@@ -24,13 +24,26 @@
 <config>
     <modules>
         <Dibspw_Dibspw>
-            <version>4.2.4</version>
+            <version>4.2.5</version>
             <depends>
                 <Mage_Paygate />
             </depends>
         </Dibspw_Dibspw>
     </modules>
     <global>
+   
+     <events> 
+        <order_cancel_after>
+            <observers>
+                <dibspw>
+                   <type>singleton</type>
+                   <class>dibspw/observer</class>
+                   <method>order_cancel_after</method>
+                 </dibspw>
+               </observers>
+         </order_cancel_after>
+      </events>
+   
        <sales>
           <order_invoice>
                 <totals>
