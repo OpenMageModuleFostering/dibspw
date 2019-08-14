@@ -143,7 +143,7 @@ class dibs_pw_api extends dibs_pw_helpers {
             foreach($oOrder->etc as $sKey => $sVal) $aData['s_' . $sKey] = $sVal;
         }
         array_walk($aData, create_function('&$val', '$val = trim($val);'));
-        $sMAC = $this->api_dibs_calcMAC($aData, $this->helper_dibs_tools_conf('hmac'));
+        $sMAC = $this->api_dibs_calcMAC($aData, $this->helper_dibs_tools_conf('HMAC'));
         if(!empty($sMAC)) $aData['MAC'] = $sMAC;
         
         return $aData;

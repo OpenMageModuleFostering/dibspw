@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
     <name>Dibspw</name>
-    <version>4.1.4</version>
+    <version>4.1.5</version>
     <stability>stable</stability>
     <license uri="http://www.opensource.org/licenses/osl-3.0.php">OSL v3.0</license>
     <channel>community</channel>
@@ -33,7 +33,15 @@ Card types accepted by the DIBS payment gateway:&#xD;
 - Nordea e-betaling&#xD;
 &#xD;
 A complete list can be found at http://www.dibspayment.com/</description>
-    <notes>4.1.4&#xD;
+<notes>
+4.1.5&#xD;
+- Fixed bug with double quoted items names&#xD;
+- Fixed bug with HMAC code&#xD;
+- Added compatibility with compilation mode&#xD;
+- Added instruction for resolving problem with MAC code error&#xD;
+
+&#xD;
+4.1.4&#xD;
 - Added Magento coupons support&#xD;
 - Fixed possible rounding issues&#xD;
 - Removed Mobile Payment Window, now DIBS Payment Window can automatically scale to different screen sizes.&#xD;

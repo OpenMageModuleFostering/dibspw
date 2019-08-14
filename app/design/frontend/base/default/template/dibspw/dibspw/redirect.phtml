@@ -28,7 +28,7 @@ $aDibsparmeter = $oPaymate->getCheckoutFormFields();
 <form method="post" id="dibspw-payment" action ="<?php echo dibs_pw_api::api_dibs_get_formAction(); ?>">
     <div>
         <?php foreach($aDibsparmeter as $sField => $sVal) {?> 
-            <input type="hidden" name="<?php echo $sField; ?>" value="<?php echo $sVal; ?>" /> 
+            <input type="hidden" name="<?php echo $sField; ?>" value="<?php echo htmlentities($sVal); ?>" /> 
         <?php } ?>
     </div>
 </form>

@@ -1,8 +1,8 @@
 <?php
 class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {   
     protected $_code  = 'Dibspw';
-    protected $_formBlockType = 'Dibspw_Dibspw_block_form';
-    protected $_infoBlockType = 'Dibspw_Dibspw_block_info';
+    protected $_formBlockType = 'Dibspw_Dibspw_Block_Form';
+    protected $_infoBlockType = 'Dibspw_Dibspw_Block_Info';
     protected $_canUseInternal = false;
     protected $_canUseForMultishipping = false;
     
