@@ -54,7 +54,13 @@ class dibs_pw_api extends dibs_pw_helpers {
                                          'paytype' => 'cardTypeName', 'actioncode' => 'actionCode',
                                          'amountoriginal'=>'amountOriginal', 'sysmod' => 's_sysmod',
                                          'validationerrors'=>'validationErrors',
-                                         'capturestatus' => 'captureStatus');
+                                         'capturestatus' => 'captureStatus', 
+                                         'acquirerDeliveryAddress' => 'acquirerDeliveryAddress',
+                                         'acquirerDeliveryCountryCode' => 'acquirerDeliveryCountryCode',
+                                         'acquirerDeliveryPostalCode' => 'acquirerDeliveryPostalCode',
+                                         'acquirerDeliveryPostalPlace' => 'acquirerDeliveryPostalPlace',
+                                         'acquirerFirstName' => 'acquirerFirstName',
+                                         'acquirerLastName' => 'acquirerLastName');
     
     /**
      * Array of currency's two ISO formats relations.
@@ -179,7 +185,7 @@ class dibs_pw_api extends dibs_pw_helpers {
         if(strpos($aData['callbackurl'], '/5c65f1600b8_dcbf.php') === FALSE) {
             $aData['callbackurl'] = $this->helper_dibs_tools_url($aData['callbackurl']);
         }
-     }
+    }
     
     /**
      * Adds Invoice API parameters specific for SAT PW.
@@ -214,7 +220,7 @@ class dibs_pw_api extends dibs_pw_helpers {
                     $aData['oiRow' . $i++] = 
                         self::api_dibs_round($oItem->qty, 3) / 1000 . ';' . 
                         'pcs;' . 
-                        self::api_dibs_utf8Fix(str_replace(';','\;',$sTmpName)) . ';' .
+                        self::api_dibs_utf8Fix(str_replace(array("\"", "&", ";"),array("'", "", "\;"), $sTmpName)) . ';' .
                         $iTmpPrice . ';' .
                         self::api_dibs_utf8Fix(str_replace(';','\;',$oItem->id)) . 
                         (isset($oItem->tax) ? ';' . self::api_dibs_round($oItem->tax) : '');
@@ -252,32 +258,35 @@ class dibs_pw_api extends dibs_pw_helpers {
         $this->helper_dibs_db_write(
             "CREATE TABLE IF NOT EXISTS `" . $this->helper_dibs_tools_prefix() . 
                 self::api_dibs_get_tableName() . "` (
-                `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                `orderid` varchar(100) NOT NULL DEFAULT '',
-                `status` varchar(10) NOT NULL DEFAULT '',
-                `testmode` tinyint(1) unsigned NOT NULL DEFAULT '0',
-                `transaction` varchar(100) NOT NULL DEFAULT '',
-                `amount` int(10) unsigned NOT NULL DEFAULT '0',
-                `currency` varchar(3) NOT NULL DEFAULT '',
-                `fee` int(10) unsigned NOT NULL DEFAULT '0',
-                `paytype` varchar(32) NOT NULL DEFAULT '',
-                `voucheramount` int(10) unsigned NOT NULL DEFAULT '0',
-                `amountoriginal` int(10) unsigned NOT NULL DEFAULT '0',
-                `ext_info` text,
-                `validationerrors` text,
-                `capturestatus` varchar(10) NOT NULL DEFAULT '0',
-                `actioncode` varchar(20) NOT NULL DEFAULT '',
-                `success_action` tinyint(1) unsigned NOT NULL DEFAULT '0' 
-                    COMMENT '0 = NotPerformed, 1 = Performed',
-                `cancel_action` tinyint(1) unsigned NOT NULL DEFAULT '0' 
-                    COMMENT '0 = NotPerformed, 1 = Performed',
-                `callback_action` tinyint(1) unsigned NOT NULL DEFAULT '0' 
-                    COMMENT '0 = NotPerformed, 1 = Performed',
-                `success_error` varchar(100) NOT NULL DEFAULT '',
-                `callback_error` varchar(100) NOT NULL DEFAULT '',
-                `sysmod` varchar(10) NOT NULL DEFAULT '',
-                PRIMARY KEY (`id`),
-                KEY `orderid` (`orderid`)
+		   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+    `orderid` varchar(100) NOT NULL DEFAULT '',
+    `status` varchar(10) NOT NULL DEFAULT '',
+    `testmode` tinyint(1) unsigned NOT NULL DEFAULT '0',
+    `transaction` varchar(100) NOT NULL DEFAULT '',
+    `amount` int(10) unsigned NOT NULL DEFAULT '0',
+    `currency` varchar(3) NOT NULL DEFAULT '',
+    `fee` int(10) unsigned NOT NULL DEFAULT '0',
+    `paytype` varchar(32) NOT NULL DEFAULT '',
+ `voucheramount` int(10) unsigned NOT NULL DEFAULT '0',
+ `amountoriginal` int(10) unsigned NOT NULL DEFAULT '0',
+ `ext_info` text,
+ `validationerrors` text,
+ `capturestatus` varchar(10) NOT NULL DEFAULT '0',
+ `actioncode` varchar(20) NOT NULL DEFAULT '',
+ `success_action` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '0 = NotPerformed, 1 = Performed',
+ `cancel_action` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '0 = NotPerformed, 1 = Performed',
+ `callback_action` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '0 = NotPerformed, 1 = Performed',
+ `success_error` varchar(100) NOT NULL DEFAULT '',
+ `callback_error` varchar(100) NOT NULL DEFAULT '',
+ `sysmod` varchar(10) NOT NULL DEFAULT '',
+ `acquirerDeliveryAddress` varchar(250) NOT NULL,
+ `acquirerDeliveryCountryCode` varchar(50) NOT NULL,
+ `acquirerDeliveryPostalCode` varchar(50) NOT NULL,
+ `acquirerDeliveryPostalPlace` varchar(50) NOT NULL,
+ `acquirerFirstName` varchar(50) NOT NULL,
+ `acquirerLastName` varchar(50) NOT NULL,
+ PRIMARY KEY (`id`),
+ KEY `orderid` (`orderid`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8;"
         );
     }
@@ -300,10 +309,10 @@ class dibs_pw_api extends dibs_pw_helpers {
         $iAmount = (isset($_POST['voucherAmount']) && $_POST['voucherAmount'] > 0) ? 
                     $_POST['amountOriginal'] : $_POST['amount'];
         if(abs((int)$iAmount - (int)self::api_dibs_round($mOrderInfo->amount)) >= 0.01) return 4;
- 
+        
         if((int)$mOrderInfo->currency != (int)$_POST['currency']) return 6;
-          
-        $sHMAC = $this->helper_dibs_tools_conf('hmac');
+         
+        $sHMAC = $this->helper_dibs_tools_conf('HMAC');
         if(!empty($sHMAC) && self::api_dibs_checkMAC($sHMAC, $bUrlDecode) !== TRUE) return 7;
         
         return 0;
@@ -334,7 +343,7 @@ class dibs_pw_api extends dibs_pw_helpers {
      * @return int 
      */
     final public function api_dibs_action_success($mOrderInfo) {
-        $iErr = $this->api_dibs_checkMainFields($mOrderInfo);
+        $iErr = $this->api_dibs_checkMainFields($mOrderInfo, false);
         if($iErr != 1 && $iErr != 2) {
             $this->api_dibs_updateResultRow(array('success_action' => empty($iErr) ? 1 : 0,
                                                   'success_error' => $iErr));
@@ -412,6 +421,7 @@ class dibs_pw_api extends dibs_pw_helpers {
                  WHERE `orderid` = '" . self::api_dibs_sqlEncode($_POST['orderid']) . "' 
                  LIMIT 1;"
             );
+            
         }
     }
     
@@ -456,6 +466,7 @@ class dibs_pw_api extends dibs_pw_helpers {
             $sData = '';
             if(isset($aData['MAC'])) unset($aData['MAC']);
             ksort($aData);
+           
             foreach($aData as $sKey => $sVal) {
                 $sData .= '&' . $sKey . '=' . (($bUrlDecode === TRUE) ? urldecode($sVal) : $sVal);
             }
@@ -594,7 +605,7 @@ class dibs_pw_api extends dibs_pw_helpers {
         // Create and set params for Http curl client
         $httpClient = new Zend_Http_Client();
         $adapter    = new Zend_Http_Client_Adapter_Curl();
-        $adapter->setCurlOption(CURLOPT_SSLVERSION, 3);
+        $adapter->setCurlOption(CURLOPT_SSLVERSION, 1);
         $adapter->setCurlOption(CURLOPT_SSL_VERIFYPEER, false);
         $httpClient->setHeaders(array('Content-Type: text/json'));
         $httpClient->setUri(self::BASE_TRANSACTION_URL."/{$action}");

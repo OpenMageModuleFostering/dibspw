@@ -12,8 +12,10 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
         $this->api_dibs_checkTable();
         $oOrder = Mage::registry('current_order');
         if($oOrder === NULL) {
+            if(isset($_POST['orderid'])) {
             $oOrder = Mage::getModel('sales/order')->loadByIncrementId($_POST['orderid']);
             $bMailing = true;
+	    }			
         } 
         if($oOrder !== NULL &&  is_callable(array($oOrder, 'getIncrementId'))) {
             $iOid = $oOrder->getIncrementId();
@@ -58,7 +60,8 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
             if(!empty($iOid)) {
                 $read = Mage::getSingleton('core/resource')->getConnection('core_read');
                 $row = $read->fetchRow("SELECT `status`, `transaction`, `amount`, `currency`, `fee`, 
-                                `paytype`, `ext_info` FROM " . Mage::getConfig()->getTablePrefix() .
+                                `paytype`, `acquirerFirstName`,`acquirerLastName`, `acquirerDeliveryAddress`,
+                                `acquirerDeliveryPostalCode`, `acquirerDeliveryCountryCode`, `acquirerDeliveryPostalPlace` ,`ext_info` FROM " . Mage::getConfig()->getTablePrefix() .
                                 dibs_pw_api::api_dibs_get_tableName() . "
                                 WHERE orderid = " . $iOid . " LIMIT 1;");
 
@@ -84,7 +87,7 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
                             $res[Mage::helper('dibspw')->__('DIBSPW_LABEL_11')] = $oOrder->getOrderCurrencyCode() . 
                                     "&nbsp;" . number_format(((int) $row['fee']) / 100, 2, ',', ' ');
                         }
-
+                      
                         if(!empty($row['paytype'])) {
                             $res[Mage::helper('dibspw')->__('DIBSPW_LABEL_12')] = $row['paytype'];
                         }
@@ -93,18 +96,50 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
                             $res[Mage::helper('dibspw')->__('DIBSPW_LABEL_16')] = $row['ext']['acquirer'];
                         }
 
-                        if($row['ext']['enrolled'] != '0') {
+                        if( isset($row['ext']['enrolled']) && $row['ext']['enrolled'] != '0') {
                             $res[Mage::helper('dibspw')->__('DIBSPW_LABEL_17')] = $row['ext']['enrolled'];
                         }
 
                         $res[Mage::helper('dibspw')->__('DIBSPW_LABEL_25')] = Mage::helper('dibspw')->__('DIBSPW_LABEL_18') . 
                                 ': <a href="https://payment.architrade.com/admin/">https://payment.architrade.com/admin/</a>';
+                                
+                        
+                        if(!empty($row['acquirerFirstName'])) {
+                            $res[Mage::helper('dibspw')->__("DIBSPW_LABEL_31")] = $row['acquirerFirstName'];
+                        }       
+                        
+                        
+                        if(!empty($row['acquirerLastName'])) {
+                            $res[Mage::helper('dibspw')->__("DIBSPW_LABEL_30")] = $row['acquirerLastName'];
+                        }       
+                                
+                      
+                        if(!empty($row['acquirerDeliveryAddress'])) {
+                            $res[Mage::helper('dibspw')->__("DIBSPW_LABEL_32")] = $row['acquirerDeliveryAddress'];
+                        }       
+                       
+                         
+                        if(!empty($row['acquirerDeliveryCountryCode'])) {
+                            $res[Mage::helper('dibspw')->__("DIBSPW_LABEL_36")] = $row['acquirerDeliveryCountryCode'];
+                        }    
+                        
+                        
+                        if(!empty($row['acquirerDeliveryPostalCode'])) {
+                            $res[Mage::helper('dibspw')->__("DIBSPW_LABEL_33")] = $row['acquirerDeliveryPostalCode'];
+                        }  
+                        
+                        
+                        if(!empty($row['acquirerDeliveryPostalPlace'])) {
+                            $res[Mage::helper('dibspw')->__("DIBSPW_LABEL_34")] = $row['acquirerDeliveryPostalPlace'];
+                        }           
+                       
+                        
                     }
                     else $res[Mage::helper('dibspw')->__('DIBSPW_LABEL_25')] = Mage::helper('dibspw')->__('DIBSPW_LABEL_19');
                 }
             }
         }
-        
+       // $res = array();
         return $res;
     }
     
@@ -140,7 +175,7 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
                          true,
                          $infoMessage);
         // Add fee to sales_order_table, if order has fee
-         if( $_POST['fee'] ) {
+         if( isset($_POST['fee']) && $_POST['fee']) {
              $order->setData('fee_amount', $_POST['fee']);
          }
         } else {
