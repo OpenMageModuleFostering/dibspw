@@ -28,17 +28,26 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
 
     private $oDibsModel;
     
+    /**
+     * Constructor aggrigates module's model to controller's field.
+     * (not a real constructor, Magento calls it automatically when it's needed)
+     */
     function _construct() {
         $this->oDibsModel= Mage::getModel('dibspw/Dibspw');
     }
 
+    /**
+     * Prepares redirect page data, add payment status information to order.
+     * Renders view to redirect customer.
+     * Adds comment to order history if it's not added before.
+     */
     public function redirectAction(){
-        // Load the session object
-      	$session = Mage::getSingleton('checkout/session');
-      	$session->setDibspwQuoteId($session->getQuoteId());
+      	$oSession = Mage::getSingleton('checkout/session');
+      	$oSession->setDibspwQuoteId($oSession->getQuoteId());
 
         $oOrder = Mage::getModel('sales/order');
-        $oOrder->loadByIncrementId($session->getLastRealOrderId());
+        $oOrder->loadByIncrementId($oSession->getLastRealOrderId());
+        
         $this->loadLayout();
         if($oOrder->getPayment() !== FALSE) {
             // Create the POST to DIBS (Inside Magento Checkout)
@@ -47,14 +56,17 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
             // Create the POST to DIBS (In Separate "Blank" Window)
             // $this->getResponse()->setBody($this->getLayout()->createBlock('Dibspw/redirect')->toHtml());
       
-            // Save order comment
+            // Save order comment if it's not already saved.
+            $sOrderComment = "";
             foreach($oOrder->getAllStatusHistory() as $oOrderStatusItem) {
                 $sOrderComment = $oOrderStatusItem->getComment();
                 break;
             }
+            
             if($sOrderComment != $this->__('DIBSPW_LABEL_3')) {
                 $oOrder->addStatusToHistory($oOrder->getStatus(), $this->__('DIBSPW_LABEL_3'));
             }
+            
             $oOrder->save();
             // Add items back on stock (if used)
             $this->addToStock();
@@ -63,54 +75,80 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
         $this->renderLayout();
     }
     
+    /**
+     * Processes success action with system API (data check, saving and order update)
+     * Redirects customer to appropriate view (Magento success page or order verification error page)
+     * Handle stock on success.
+     */
     public function successAction() {
-        $session = Mage::getSingleton('checkout/session');
-        $session->setQuoteId($session->getDibspwStandardQuoteId(true));
-        $oOrder = Mage::getModel('sales/order');
+        $oSession = Mage::getSingleton('checkout/session');
+        $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));
         
-        $iResult = $this->oDibsModel->api_dibs_action_success($oOrder);
-        if(!empty($iResult)) {
-            echo $this->oDibsModel->api_dibs_getFatalErrorPage($iResult);
-            exit();
+        $iOrderId = (int)$this->getRequest()->getPost('orderid');
+        if(!empty($iOrderId)) {
+            $oOrder = Mage::getModel('sales/order');
+            $oOrder->loadByIncrementId($iOrderId);
+            if(!is_null($oOrder)) {
+                $iResult = $this->oDibsModel->api_dibs_action_success($oOrder);
+                if(!empty($iResult)) {
+                    echo $this->oDibsModel->api_dibs_getFatalErrorPage($iResult);
+                    exit;
+                }
+                else {
+                    Mage::app()->getFrontController()->getResponse()->setRedirect(
+                        $this->oDibsModel->helper_dibs_tools_url('checkout/onepage/success')
+                    );
+                }
+            }
+            else {
+                echo $this->oDibsModel->api_dibs_getFatalErrorPage(2);
+                exit;            
+            }
         }
         else {
-            Mage::app()->getFrontController()->getResponse()->setRedirect(
-                $this->oDibsModel->helper_dibs_tools_url('checkout/onepage/success')
-            );
+            echo $this->oDibsModel->api_dibs_getFatalErrorPage(1);
+            exit;
         }
     }
     
+    /**
+     * Processes server-to-server callback with system API.
+     * API checks order data and adds additional information about order to module's transactions 
+     * log table.
+     */
     public function callbackAction() {
         $oOrder = Mage::getModel('sales/order');
         $this->oDibsModel->api_dibs_action_callback($oOrder);
     }
     
     /**
-     * When a customer cancel payment from dibs.
+     * Processes order cancelation with Magento API and module's API.
+     * sets appropriate status and order history comment.
+     * Redirects customer to orders history view.
      */
     public function cancelAction() {
-    	$session = Mage::getSingleton('checkout/session');
-        $session->setQuoteId($session->getDibspwStandardQuoteId(true));
-	$fields = array();
+    	$oSession = Mage::getSingleton('checkout/session');
+        $oSession->setQuoteId($oSession->getDibspwStandardQuoteId(true));
 
-        // Save order comment
+        $iOrderId = (int)$this->getRequest()->getPost('orderid');
       	$oOrder = Mage::getModel('sales/order');
-		
-	if (isset($_POST['orderid'])) {
-            $oOrder->loadByIncrementId((int)$_POST['orderid']);
+        $oOrder->loadByIncrementId($iOrderId);
+        
+	if(!is_null($oOrder)) {
             $oOrder->registerCancellation($this->__('DIBSPW_LABEL_20'));
             $oOrder->save();
-
-            // Add items back on stock (if used)
-            $this->oDibsModel->removeFromStock();
+            $this->oDibsModel->removeFromStock($iOrderId);
             $this->oDibsModel->api_dibs_action_cancel();
         }
-        // Give back cart to customer for new attempt to buy
+        
         Mage::app()->getFrontController()->getResponse()->setRedirect(
                 $this->oDibsModel->helper_dibs_tools_url('sales/order/history')
         );
     }
     
+    /**
+     * Checks Magento ajax session expiration status, sets appropriate header.
+     */
     protected function _expireAjax(){
         if (!Mage::getSingleton('checkout/session')->getQuote()->hasItems()) {
             $this->getResponse()->setHeader('HTTP/1.1','403 Session Expired');
@@ -118,39 +156,34 @@ class Dibspw_Dibspw_DibspwController extends Mage_Core_Controller_Front_Action {
         }
     }
 
+    /**
+     * Returns items to stock, depends on 'handlestock' module configuration option
+     * (needed to fix behavior, when Magento can decrease stock automatically before order is paid)
+     *
+     * Put the order back on stock as it is not yet paid!
+     * http://www.magentocommerce.com/wiki/groups/132/protx_form_-_subtracting_stock_on_successful_payment
+     */
     public function addToStock() {
-      	// Load the session object
-      	$session = Mage::getSingleton('checkout/session');
-      	$session->setDibspwStandardQuoteId($session->getQuoteId());
+      	$oSession = Mage::getSingleton('checkout/session');
+      	$oSession->setDibspwStandardQuoteId($oSession->getQuoteId());
 
         $oOrder = Mage::getModel('sales/order');
-        $oOrder->loadByIncrementId($session->getLastRealOrderId());
+        $oOrder->loadByIncrementId($oSession->getLastRealOrderId());
       
-        // add items back on stock
-        // Put the order back on stock as it is not yet paid!
-        // http://www.magentocommerce.com/wiki/groups/132/protx_form_-_subtracting_stock_on_successful_payment
-
     	if (((int)$this->oDibsModel->getConfigData('handlestock')) == 1) {
-            if(!isset($_SESSION['stock_removed']) || 
-               $_SESSION['stock_removed'] != $session->getLastRealOrderId()) {
-                /* Put the stock back on, we don't want it taken off yet */
-                $items = $oOrder->getAllItems(); // Get all items from the order
-                if ($items) {
-                    foreach($items as $item) {
-                        $quantity = $item->getQtyOrdered(); // get Qty ordered
-                        $product_id = $item->getProductId(); // get it's ID
-                        // Load the stock for this product
-                        $stock = Mage::getModel('cataloginventory/stock_item')
-                                 ->loadByProduct($product_id);
-                        $stock->setQty($stock->getQty()+$quantity); // Set to new Qty            
-                        $stock->save(); // Save
+            if($oSession->getData('stock_removed') != $oSession->getLastRealOrderId()) {
+                $oItems = $oOrder->getAllItems();
+                if ($oItems) {
+                    foreach($oItems as $oItem) {
+                        $oStock = Mage::getModel('cataloginventory/stock_item')
+                                    ->loadByProduct($oItem->getProductId());
+                        $oStock->setQty($oStock->getQty() + $oItem->getQtyOrdered());
+                        $oStock->save();
                         continue;                        
                     }
                 } 
-           
-                // Flag so that stock is only updated once!
-                $_SESSION['stock_removed'] = $session->getLastRealOrderId();
 
+                $oSession->setData('stock_removed', $oSession->getLastRealOrderId());
             }
         }
     }

@@ -35,3 +35,6 @@
 "dibspw_txt_msg_toshop", "Return to shop"
 "dibspw_txt_msg_errcode", "Error code:"
 "dibspw_txt_msg_errmsg",  "Error message:"
+"dibspw_txt_msg_discount_total", "Discount Total"
+"dibspw_txt_msg_shipping_total", "Shipping Total"
+"dibspw_txt_msg_tax_total",      "Tax Total"

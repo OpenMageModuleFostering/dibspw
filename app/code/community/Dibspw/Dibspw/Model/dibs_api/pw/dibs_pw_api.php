@@ -1,33 +1,60 @@
 <?php
-require_once str_replace("\\", "/", dirname(__FILE__)) . '/dibs_pw_helpers_interface.php';
-require_once str_replace("\\", "/", dirname(__FILE__)) . '/dibs_pw_helpers_cms.php';
-require_once str_replace("\\", "/", dirname(__FILE__)) . '/dibs_pw_helpers.php';
+require_once str_replace('\\', '/', dirname(__FILE__)) . '/dibs_pw_helpers_interface.php';
+require_once str_replace('\\', '/', dirname(__FILE__)) . '/dibs_pw_helpers_cms.php';
+require_once str_replace('\\', '/', dirname(__FILE__)) . '/dibs_pw_helpers.php';
 
 class dibs_pw_api extends dibs_pw_helpers {
 
+    /**
+     * DIBS responses log table.
+     * 
+     * @var string
+     */
     private static $sDibsTable   = 'dibs_pw_results';
-    
+
+    /**
+     * Settings of module inner template engine.
+     * 
+     * @var array 
+     */
     private static $aTemplates   = array('folder' => 'tmpl',
                                          'marker' => '#',
                                          'autotranslate' => array('lbl','msg', 'sts', 'err'),
                                          'tmpls' => array('error' => 'dibs_pw_error'));
-    
+
+    /**
+     * Default currency code (in two ISO formats).
+     * 
+     * @var array 
+     */
     private static $sDefaultCurr = array(0 => 'EUR', 1 => '978');
 
-    private static $aFormActions = array(2 => 'https://sat1.dibspayment.com/dibspaymentwindow/entrypoint',
-                                         3 => 'https://mopay.dibspayment.com/');
+    /**
+     * DIBS gateway URL.
+     * 
+     * @var string 
+     */
+    private static $sFormAction  = 'https://sat1.dibspayment.com/dibspaymentwindow/entrypoint';
     
+    /**
+     * Dictionary of DIBS response to self::$sDibsTable table fields relations.
+     * 
+     * @var array 
+     */
     private static $aRespFields  = array('orderid' => 'orderid', 'status' => 'status',
                                          'testmode' => 'test', 'transaction' => 'transaction', 
-                                         'amount' => 'amount','currency' => 'currency',
+                                         'amount' => 'amount', 'currency' => 'currency',
                                          'fee' => 'fee', 'voucheramount' => 'voucherAmount',
-                                         'paytype' => array(2 => 'cardTypeName', 3 => 'payTypeName'),
-                                         'amountoriginal'=>'amountOriginal',
+                                         'paytype' => 'cardTypeName', 'actioncode' => 'actionCode',
+                                         'amountoriginal'=>'amountOriginal', 'sysmod' => 's_sysmod',
                                          'validationerrors'=>'validationErrors',
-                                         'capturestatus' => 'captureStatus', 
-                                         'actioncode' => array(2 => 'actionCode', 3 => 'approvalCode'), 
-                                         'sysmod' => 's_sysmod');
+                                         'capturestatus' => 'captureStatus');
     
+    /**
+     * Array of currency's two ISO formats relations.
+     * 
+     * @var array 
+     */
     private static $aCurrency = array('ADP' => '020','AED' => '784','AFA' => '004','ALL' => '008',
                                       'AMD' => '051','ANG' => '532','AOA' => '973','ARS' => '032',
                                       'AUD' => '036','AWG' => '533','AZM' => '031','BAM' => '977',
@@ -75,7 +102,7 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Returns CMS order common information converted to standardized order information objects.
      * 
-     * @param mixed $mOrderInfo
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
      * @return object 
      */
     private function api_dibs_commonOrderObject($mOrderInfo) {
@@ -89,7 +116,7 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Returns CMS order invoice information converted to standardized order information objects.
      * 
-     * @param mixed $mOrderInfo
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
      * @return object 
      */
     private function api_dibs_invoiceOrderObject($mOrderInfo) {
@@ -100,30 +127,18 @@ class dibs_pw_api extends dibs_pw_helpers {
         );
     }
 
-
-    /**
-     * Returns form action URL of gateway.
-     * 
-     * @param bool $bResponse
-     * @return string 
-     */
-    final public function api_dibs_get_formAction($bResponse = FALSE) {
-        return self::$aFormActions[$this->api_dibs_get_method($bResponse)];
-    }
-    
     /**
      * Collects API parameters to send in dependence of checkout type. API entry point.
      * 
-     * @param mixed $mOrderInfo
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
      * @return array 
      */
     final public function api_dibs_get_requestFields($mOrderInfo) {
+        $aData = array();
         $oOrder = $this->api_dibs_commonOrderObject($mOrderInfo);
         $this->api_dibs_prepareDB($oOrder->order->orderid);
-        $aData = array('s_pw' => $this->api_dibs_get_method());
         $this->api_dibs_commonFields($aData, $oOrder);
-        if($aData['s_pw'] == 2) $this->api_dibs_invoiceFields($aData, $mOrderInfo);
-        else $this->api_dibs_mobileFields($aData);
+        $this->api_dibs_invoiceFields($aData, $mOrderInfo);
         if(count($oOrder->etc) > 0) {
             foreach($oOrder->etc as $sKey => $sVal) $aData['s_' . $sKey] = $sVal;
         }
@@ -137,8 +152,8 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Adds to $aData common DIBS integration parameters.
      * 
-     * @param array $aData
-     * @param object $oOrder 
+     * @param array $aData Array to fill in by link with DIBS API parameters.
+     * @param object $oOrder Formated to object order common information.
      */
     private function api_dibs_commonFields(&$aData, $oOrder) {
         $aData['orderid']  = $oOrder->order->orderid;
@@ -159,24 +174,12 @@ class dibs_pw_api extends dibs_pw_helpers {
             $aData['callbackurl'] = $this->helper_dibs_tools_url($aData['callbackurl']);
         }
     }
-
-    /**
-     * Adds to $aData parameters specific for Mobile PW integration.
-     * 
-     * @param array $aData 
-     */
-    private function api_dibs_mobileFields(&$aData) {
-        if((string)$this->helper_dibs_tools_conf('voucher') == 'yes') $aData['voucher'] = 1;
-        if((string)$this->helper_dibs_tools_conf('uniq') == 'yes') {
-            $aData['uniqueid'] = $aData['orderid'];
-        }
-    }
     
     /**
      * Adds Invoice API parameters specific for SAT PW.
      * 
-     * @param array $aData
-     * @param object $oOrder 
+     * @param array $aData  Array to fill in by link with DIBS API parameters.
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
      */
     private function api_dibs_invoiceFields(&$aData, $mOrderInfo) {
         $oOrder = $this->api_dibs_invoiceOrderObject($mOrderInfo);
@@ -186,11 +189,15 @@ class dibs_pw_api extends dibs_pw_helpers {
         }
         $oOrder->items[] = $oOrder->ship;
         if(isset($oOrder->items) && count($oOrder->items) > 0) {
-            $aData['oitypes'] = 'QUANTITY;UNITCODE;DESCRIPTION;AMOUNT;ITEMID;' .
-                                (self::$bTaxAmount ? 'VATAMOUNT' : 'VATPERCENT');
-            $aData['oinames'] = 'Qty;UnitCode;Description;Amount;ItemId;' .
-                                (self::$bTaxAmount ? 'VatAmount' : 'VatPercent');
+            $aData['oitypes'] = 'QUANTITY;UNITCODE;DESCRIPTION;AMOUNT;ITEMID';
+                                
+            $aData['oinames'] = 'Qty;UnitCode;Description;Amount;ItemId';
            
+            if(isset($oOrder->items[0]->tax)) {
+                $aData['oitypes'] .= (self::$bTaxAmount ? ';VATAMOUNT' : ';VATPERCENT');
+                $aData['oinames'] .= (self::$bTaxAmount ? ';VatAmount' : ';VatPercent');
+            }
+            
             $i = 1;
             foreach($oOrder->items as $oItem) {
                 $iTmpPrice = self::api_dibs_round($oItem->price);
@@ -199,12 +206,12 @@ class dibs_pw_api extends dibs_pw_helpers {
                     if(empty($sTmpName)) $sTmpName = $oItem->id;
 
                     $aData['oiRow' . $i++] = 
-                        self::api_dibs_round($oItem->qty, 3) / 1000 . ";" . 
-                        "pcs" . ";" . 
-                        self::api_dibs_utf8Fix(str_replace(";","\;",$sTmpName)) . ";" .
-                        $iTmpPrice . ";" .
-                        self::api_dibs_utf8Fix(str_replace(";","\;",$oItem->id)) . ";" .
-                        self::api_dibs_round($oItem->tax);
+                        self::api_dibs_round($oItem->qty, 3) / 1000 . ';' . 
+                        'pcs;' . 
+                        self::api_dibs_utf8Fix(str_replace(';','\;',$sTmpName)) . ';' .
+                        $iTmpPrice . ';' .
+                        self::api_dibs_utf8Fix(str_replace(';','\;',$oItem->id)) . 
+                        (isset($oItem->tax) ? ';' . self::api_dibs_round($oItem->tax) : '');
                 }
                 unset($iTmpPrice);
             }
@@ -216,25 +223,9 @@ class dibs_pw_api extends dibs_pw_helpers {
     }
     
     /**
-     * Returns integration method ID (2 or 3), specific for currenct transaction.
-     * 
-     * @param bool $bResp
-     * @return int 
-     */
-    final public function api_dibs_get_method($bResp = FALSE) {
-        if($bResp === TRUE && ($_POST['s_pw'] == 2 || $_POST['s_pw'] == 3)) return $_POST['s_pw'];
-
-        $iPayMethod = $this->helper_dibs_tools_conf("method");
-        if($iPayMethod != 2 && $iPayMethod != 3) {
-            return (self::api_dibs_detectMobile() === TRUE) ? 3 : 2;
-        }
-        else return $iPayMethod;
-    }
-    
-    /**
      * Process DB preparations and adds empty transaction record before payment.
      * 
-     * @param int $iOrderId 
+     * @param int $iOrderId Order ID to insert to self::$sDibsTable table in DB.
      */
     private function api_dibs_prepareDB($iOrderId) {
         $this->api_dibs_checkTable();
@@ -284,26 +275,28 @@ class dibs_pw_api extends dibs_pw_helpers {
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8;"
         );
     }
-    
+
     /**
-     * Checks returned main fields.
+     * Checks existance and integrity of main fields, that returned to shop after payment.
      * 
-     * @param mixed $mOrder
-     * @param bool $bUrlDecode
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
+     * @param bool $bUrlDecode Flag if urldecode before MAC hash calculation is needed (for success action).
      * @return int 
      */
-    final public function api_dibs_checkMainFields($mOrder, $bUrlDecode = TRUE) {
-        if(!isset($_POST['orderid'])) return 1;
-        $mOrder = $this->helper_dibs_obj_order($mOrder, TRUE);
-        if(!$mOrder->orderid) return 2;
-
-        if(!isset($_POST['amount'])) return 3;
+    final public function api_dibs_checkMainFields($mOrderInfo, $bUrlDecode = TRUE) {
+        if(!isset($_POST['orderid']) || empty($_POST['orderid'])) return 1;
+        elseif(!isset($_POST['amount'])) return 3;
+        elseif(!isset($_POST['currency'])) return 5;
+        
+        $mOrderInfo = $this->helper_dibs_obj_order($mOrderInfo, TRUE);
+        if(!isset($mOrderInfo->orderid) || empty($mOrderInfo->orderid)) return 2;
+        
         $iAmount = (isset($_POST['voucherAmount']) && $_POST['voucherAmount'] > 0) ? 
                     $_POST['amountOriginal'] : $_POST['amount'];
-        if(abs((int)$iAmount - (int)self::api_dibs_round($mOrder->amount)) >= 0.01) return 4;
-	if(!isset($_POST['currency'])) return 5;
-        if((int)$mOrder->currency != (int)$_POST['currency']) return 6;
-           
+        if(abs((int)$iAmount - (int)self::api_dibs_round($mOrderInfo->amount)) >= 0.01) return 4;
+ 
+        if((int)$mOrderInfo->currency != (int)$_POST['currency']) return 6;
+          
         $sHMAC = $this->helper_dibs_tools_conf('hmac');
         if(!empty($sHMAC) && self::api_dibs_checkMAC($sHMAC, $bUrlDecode) !== TRUE) return 7;
         
@@ -314,28 +307,28 @@ class dibs_pw_api extends dibs_pw_helpers {
      * Give fallback verification error page 
      * if module has no ability to use CMS for error displaying.
      * 
-     * @param int $iCode
+     * @param int $iCode Error code.
      * @return string 
      */
     public function api_dibs_getFatalErrorPage($iCode) {
-        return self::api_dibs_renderTemplate(self::$aTemplates['tmpls']['error'],
+        return $this->api_dibs_renderTemplate(self::$aTemplates['tmpls']['error'],
                    array('errname_err' => 0,
                          'errcode_msg' => 'errcode',
                          'errcode'     => $iCode,
                          'errmsg_msg'  => 'errmsg',
                          'errmsg_err'  => $iCode,
                          'link_toshop' => $this->helper_dibs_obj_urls()->carturl,
-                         'toshop_msg'  => toshop));
+                         'toshop_msg'  => 'toshop'));
     }
     
     /**
      * Processes success redirect from payment gateway.
      * 
-     * @param mixed $mOrder
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
      * @return int 
      */
-    final public function api_dibs_action_success($mOrder) {
-        $iErr = $this->api_dibs_checkMainFields($mOrder);
+    final public function api_dibs_action_success($mOrderInfo) {
+        $iErr = $this->api_dibs_checkMainFields($mOrderInfo);
         if($iErr != 1 && $iErr != 2) {
             $this->api_dibs_updateResultRow(array('success_action' => empty($iErr) ? 1 : 0,
                                                   'success_error' => $iErr));
@@ -356,10 +349,10 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Processes callback from payment gateway.
      * 
-     * @param mixed $mOrder 
+     * @param mixed $mOrderInfo All order information, needed for DIBS (in shop format).
      */
-    final public function api_dibs_action_callback($mOrder) {
-        $iErr = $this->api_dibs_checkMainFields($mOrder, FALSE);
+    final public function api_dibs_action_callback($mOrderInfo) {
+        $iErr = $this->api_dibs_checkMainFields($mOrderInfo, FALSE);
         if(!empty($iErr)) {
             if($iErr != 1 && $iErr != 2) {
                 $this->api_dibs_updateResultRow(array('callback_error' => $iErr));
@@ -374,14 +367,7 @@ class dibs_pw_api extends dibs_pw_helpers {
         if(empty($sResult)) {
             $aFields = array('callback_action' => 1);
             $aResponse = $_POST;
-            $iPayMethod = $this->api_dibs_get_method(TRUE);
-            foreach(self::$aRespFields as $sDbKey => $mPostKey) {
-                if(is_array($mPostKey)) {
-                    $sPostKey = isset($mPostKey[$iPayMethod]) ? $mPostKey[$iPayMethod] : '';
-                }
-                else $sPostKey = $mPostKey;
-                unset($mPostKey);
-                
+            foreach(self::$aRespFields as $sDbKey => $sPostKey) {
                 if(!empty($sPostKey) && isset($_POST[$sPostKey])) {
                     unset($aResponse[$sPostKey]);
                     $aFields[$sDbKey] = $_POST[$sPostKey];
@@ -393,7 +379,7 @@ class dibs_pw_api extends dibs_pw_helpers {
             
             if(method_exists($this, 'helper_dibs_hook_callback') && 
                     is_callable(array($this, 'helper_dibs_hook_callback'))) {
-                $this->helper_dibs_hook_callback($mOrder);
+                $this->helper_dibs_hook_callback($mOrderInfo);
             }
         }
         else $this->api_dibs_updateResultRow(array('callback_error' => 8));
@@ -403,11 +389,11 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Updates from array one order row in dibs results table.
      * 
-     * @param array $aFields
+     * @param array $aFields Key-Value array to update order info in self::$sDibsTable table.
      */
     private function api_dibs_updateResultRow($aFields) {
         if(isset($_POST['orderid']) && !empty($_POST['orderid'])) {
-            $sUpdate = "";
+            $sUpdate = '';
             foreach($aFields as $sCell => $sVal) {
                 $sUpdate .= "`" . $sCell . "`=" . "'" . self::api_dibs_sqlEncode($sVal) . "',";
             }
@@ -423,14 +409,15 @@ class dibs_pw_api extends dibs_pw_helpers {
     
     /**
      * Simple template loader and renderer. Used to load fallback error template.
+     * Support "autotranslate" for self::$aTemplates['autotranslate'] text types.
      * 
-     * @param string $sTmplName
-     * @param array $sParams
+     * @param string $sTmplName Name of template to use.
+     * @param array $sParams Parameters to replace markers during render.
      * @return string 
      */
-    private function api_dibs_renderTemplate($sTmplName, $sParams = array()) {
-        $sTmpl = file_get_contents(str_replace("\\", "/", dirname(__FILE__)) . "/" . 
-                                   self::$aTemplates['folder'] . "/" . $sTmplName);
+    public function api_dibs_renderTemplate($sTmplName, $sParams = array()) {
+        $sTmpl = file_get_contents(str_replace('\\', '/', dirname(__FILE__)) . '/' . 
+                                   self::$aTemplates['folder'] . '/' . $sTmplName);
         if($sTmpl !== FALSE) {
             foreach($sParams as $sKey => $sVal) {
                 $sValueType = substr($sKey, -3);
@@ -441,7 +428,7 @@ class dibs_pw_api extends dibs_pw_helpers {
                                      $sVal, $sTmpl);
             }
         }
-        else $sTmpl = "";
+        else $sTmpl = '';
         
         return $sTmpl;
     }
@@ -450,22 +437,23 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Calculates MAC for given array of data.
      * 
-     * @param array $aData
-     * @param string $sHMAC
-     * @param bool $bUrlDecode
+     * @param array $aData Array of data to calculate the MAC hash.
+     * @param string $sHMAC HMAC key for hash calculation.
+     * @param bool $bUrlDecode Flag if urldecode before MAC hash calculation is needed (for success action).
      * @return string 
      */
     final public static function api_dibs_calcMAC($aData, $sHMAC, $bUrlDecode = FALSE) {
-        $sMAC = "";
+        $sMAC = '';
         if(!empty($sHMAC)) {
-            $sData = "";
+            $sData = '';
             if(isset($aData['MAC'])) unset($aData['MAC']);
             ksort($aData);
             foreach($aData as $sKey => $sVal) {
-                $sData .= "&" . $sKey . "=" . (($bUrlDecode === TRUE) ? urldecode($sVal) : $sVal);
+                $sData .= '&' . $sKey . '=' . (($bUrlDecode === TRUE) ? urldecode($sVal) : $sVal);
             }
-            $sMAC = hash_hmac("sha256", ltrim($sData, "&"), self::api_dibs_hextostr($sHMAC));
+            $sMAC = hash_hmac('sha256', ltrim($sData, '&'), self::api_dibs_hextostr($sHMAC));
         }
+        
         return $sMAC;
     }
     
@@ -473,13 +461,22 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Compare calculated MAC with MAC from response urldecode response if second parameter is TRUE.
      * 
-     * @param string $sHMAC
-     * @param bool $bUrlDecode
+     * @param string $sHMAC HMAC key for hash calculation.
+     * @param bool $bUrlDecode Flag if urldecode before MAC hash calculation is needed (for success action).
      * @return bool 
      */
     final public static function api_dibs_checkMAC($sHMAC, $bUrlDecode = FALSE) {
-        $_POST['MAC'] = isset($_POST['MAC']) ? $_POST['MAC'] : "";
+        if(!isset($_POST['MAC'])) $_POST['MAC'] = '';
         return ($_POST['MAC'] == self::api_dibs_calcMAC($_POST, $sHMAC, $bUrlDecode)) ? TRUE : FALSE;
+    }
+    
+    /**
+     * Returns form action URL of gateway.
+     * 
+     * @return string 
+     */
+    final public function api_dibs_get_formAction() {
+        return self::$sFormAction;
     }
     
     /**
@@ -503,46 +500,47 @@ class dibs_pw_api extends dibs_pw_helpers {
     /**
      * Gets value by code from currency array. Supports fliped values.
      * 
-     * @param string $sCode
-     * @param bool $bFlip
+     * @param string $sCode Currency code (its ISO formats from self::$aCurrency depends on $bFlip value)
+     * @param bool $bFlip If we need to flip self::$aCurrency array and look in another format.
      * @return string 
      */
     final public static function api_dibs_get_currencyValue($sCode, $bFlip = FALSE) {
         $aCurrency = ($bFlip === TRUE) ? array_flip(self::api_dibs_get_currencyArray()) : 
                      self::api_dibs_get_currencyArray();
         return isset($aCurrency[$sCode]) ? $aCurrency[$sCode] : 
-               $aCurrency[self::$sDefaultCurr[$bFlip === TRUE ? 1 : 0]];
+                                           $aCurrency[self::$sDefaultCurr[$bFlip === TRUE ? 1 : 0]];
     }
     
     /**
      * Convert hex HMAC to string.
      * 
-     * @param string $sHex
+     * @param string $sHMAC HMAC key for hash calculation.
      * @return string 
      */
-    private static function api_dibs_hextostr($sHex) {
-        $sRes = "";
-        foreach(explode("\n", trim(chunk_split($sHex,2))) as $h) $sRes .= chr(hexdec($h));
+    private static function api_dibs_hextostr($sHMAC) {
+        $sRes = '';
+        foreach(explode("\n", trim(chunk_split($sHMAC, 2))) as $h) $sRes .= chr(hexdec($h));
         return $sRes;
     }
     
     /**
      * Replaces sql-service quotes to simple quotes and escapes them by slashes.
      * 
-     * @param string $sVal
+     * @param string $sValue Value to escape before SQL operation.
      * @return string 
      */
-    public static function api_dibs_sqlEncode($sVal) {
-        return addslashes(str_replace("`", "'",  trim(strip_tags((string)$sVal))));
+    public static function api_dibs_sqlEncode($sValue) {
+        return addslashes(str_replace('`', "'",  trim(strip_tags((string)$sValue))));
     }
     
     /**
-     * Returns integer representation of amont. Saves two signs that are
+     * Returns integer representation of amount. Saves two signs that are
      * after floating point in float number by multiplication by 100.
      * E.g.: converts to cents in money context.
      * Workarround of float to int casting.
      * 
-     * @param float $fNum
+     * @param float $fNum Float number to round safely.
+     * @param int $iPrec Precision. Quantity of digits to save after decimal point.
      * @return int 
      */
     public static function api_dibs_round($fNum, $iPrec = 2) {
@@ -553,85 +551,12 @@ class dibs_pw_api extends dibs_pw_helpers {
      * Fixes UTF-8 special symbols if encoding of CMS is not UTF-8.
      * Main using is for wided latin alphabets.
      * 
-     * @param string $sText
+     * @param string $sText The text to prepare in UTF-8 if it is not encoded to it yet.
      * @return string 
      */
     public static function api_dibs_utf8Fix($sText) {
-        return (mb_detect_encoding($sText) == "UTF-8" && mb_check_encoding($sText, "UTF-8")) ?
+        return (mb_detect_encoding($sText) == 'UTF-8' && mb_check_encoding($sText, 'UTF-8')) ?
                $sText : utf8_encode($sText);
-    }
-
-    /**
-     * Detects mobile device by user-agent and received headers.
-     * 
-     * @return bool 
-     */
-    private static function api_dibs_detectMobile() { 
-        $sUserAgent = strtolower(getenv('HTTP_USER_AGENT')); 
-        $sAccept    = strtolower(getenv('HTTP_ACCEPT')); 
-  
-        if(strpos($sAccept,'text/vnd.wap.wml') !== FALSE || 
-           strpos($sAccept,'application/vnd.wap.xhtml+xml') !== FALSE ||
-           isset($_SERVER['HTTP_X_WAP_PROFILE']) || isset($_SERVER['HTTP_PROFILE'])) return TRUE;
-  
-        if(preg_match('/(mini 9.5|vx1000|lge |m800|e860|u940|ux840|compal|wireless| mobi|ahong|' .
-                      'lg380|lgku|lgu900|lg210|lg47|lg920|lg840|lg370|sam-r|mg50|s55|g83|t66|' .
-                      'vx400|mk99|d615|d763|el370|sl900|mp500|samu3|samu4|vx10|xda_|samu5|samu6|' .
-                      'samu7|samu9|a615|b832|m881|s920|n210|s700|c-810|_h797|mob-x|sk16d|848b|' .
-                      'mowser|s580|r800|471x|v120|rim8|c500foma:|160x|x160|480x|x640|t503|w839|'. 
-                      'i250|sprint|w398samr810|m5252|c7100|mt126|x225|s5330|s820|htil-g1|fly v71|' .
-                      's302|-x113|novarra|k610i|-three|8325rc|8352rc|sanyo|vx54|c888|nx250|n120|' .
-                      'mtk |c5588|s710|t880|c5005|i;458x|p404i|s210|c5100|teleca|s940|c500|s590|' .
-                      'foma|samsu|vx8|vx9|a1000|_mms|myx|a700|gu1100|bc831|e300|ems100|me701|' .
-                      'me702m-three|sd588|s800|8325rc|ac831|mw200|brew |d88|htc\/|htc_touch|355x|' .
-                      'm50|km100|d736|p-9521|telco|sl74|ktouch|m4u\/|me702|8325rc|kddi|phone|lg |' .
-                      'sonyericsson|samsung|240x|x320vx10|nokia|sony cmd|motorola|up.browser|' .
-                      'up.link|mmp|symbian|smartphone|midp|wap|vodafone|o2|pocket|kindle|mobile|' .
-                      'psp|treo)/', $sUserAgent)) return TRUE;
-  
-        if(in_array(substr($sUserAgent, 0, 4), 
-            array("1207", "3gso", "4thp", "501i", "502i", "503i", "504i", "505i", "506i", "6310",
-                  "6590", "770s", "802s", "a wa", "abac", "acer", "acoo", "acs-", "aiko", "airn",
-                  "alav", "alca", "alco", "amoi", "anex", "anny", "anyw", "aptu", "arch", "argo",
-                  "aste", "asus", "attw", "au-m", "audi", "aur ", "aus ", "avan", "beck", "bell", 
-                  "benq", "bilb", "bird", "blac", "blaz", "brew", "brvw", "bumb", "bw-n", "bw-u",
-                  "c55/", "capi", "ccwa", "cdm-", "cell", "chtm", "cldc", "cmd-", "cond", "craw",
-                  "dait", "dall", "dang", "dbte", "dc-s", "devi", "dica", "dmob", "doco", "dopo",
-                  "ds-d", "ds12", "el49", "elai", "eml2", "emul", "eric", "erk0", "esl8", "ez40",
-                  "ez60", "ez70", "ezos", "ezwa", "ezze", "fake", "fetc", "fly-", "fly_", "g-mo",
-                  "g1 u", "g560", "gene", "gf-5", "go.w", "good", "grad", "grun", "haie", "hcit",
-                  "hd-m", "hd-p", "hd-t", "hei-", "hiba", "hipt", "hita", "hp i", "hpip", "hs-c",
-                  "htc ", "htc-", "htc_", "htca", "htcg", "htcp", "htcs", "htct", "http", "huaw", 
-                  "hutc", "i-20", "i-go", "i-ma", "i230", "iac",  "iac-", "iac/", "ibro", "idea",
-                  "ig01", "ikom", "im1k", "inno", "ipaq", "iris", "jata", "java", "jbro", "jemu",
-                  "jigs", "kddi", "keji", "kgt",  "kgt/", "klon", "kpt ", "kwc-", "kyoc", "kyok",
-                  "leno", "lexi", "lg g", "lg-a", "lg-b", "lg-c", "lg-d", "lg-f", "lg-g", "lg-k", 
-                  "lg-l", "lg-m", "lg-o", "lg-p", "lg-s", "lg-t", "lg-u", "lg-w", "lg/k", "lg/l",
-                  "lg/u", "lg50", "lg54", "lge-", "lge/", "libw", "lynx", "m-cr", "m1-w", "m3ga",
-                  "m50/", "mate", "maui", "maxo", "mc01", "mc21", "mcca", "medi", "merc", "meri",
-                  "midp", "mio8", "mioa", "mits", "mmef", "mo01", "mo02", "mobi", "mode", "modo", 
-                  "mot ", "mot-", "moto", "motv", "mozz", "mt50", "mtp1", "mtv ", "mwbp", "mywa",
-                  "n100", "n101", "n102", "n202", "n203", "n300", "n302", "n500", "n502", "n505",
-                  "n700", "n701", "n710", "nec-", "nem-", "neon", "netf", "newg", "newt", "nok6",
-                  "noki", "nzph", "o2 x", "o2-x", "o2im", "opti", "opwv", "oran", "owg1", "p800", 
-                  "palm", "pana", "pand", "pant", "pdxg", "pg-1", "pg-2", "pg-3", "pg-6", "pg-8",
-                  "pg-c", "pg13", "phil", "pire", "play", "pluc", "pn-2", "pock", "port", "pose",
-                  "prox", "psio", "pt-g", "qa-a", "qc-2", "qc-3", "qc-5", "qc-7", "qc07", "qc12",
-                  "qc21", "qc32", "qc60", "qci-", "qtek", "qwap", "r380", "r600", "raks", "rim9", 
-                  "rove", "rozo", "s55/", "sage", "sama", "samm", "sams", "sany", "sava", "sc01",
-                  "sch-", "scoo", "scp-", "sdk/", "se47", "sec-", "sec0", "sec1", "semc", "send",
-                  "seri", "sgh-", "shar", "sie-", "siem", "sk-0", "sl45", "slid", "smal", "smar",
-                  "smb3", "smit", "smt5", "soft", "sony", "sp01", "sph-", "spv ", "spv-", "sy01", 
-                  "symb", "t-mo", "t218", "t250", "t600", "t610", "t618", "tagt", "talk", "tcl-",
-                  "tdg-", "teli", "telm", "tim-", "topl", "tosh", "treo", "ts70", "tsm-", "tsm3",
-                  "tsm5", "tx-9", "up.b", "upg1", "upsi", "utst", "v400", "v750", "veri", "virg",
-                  "vite", "vk-v", "vk40", "vk50", "vk52", "vk53", "vm40", "voda", "vulc", "vx52", 
-                  "vx53", "vx60", "vx61", "vx70", "vx80", "vx81", "vx83", "vx85", "vx98", "w3c ",
-                  "w3c-", "wap-", "wapa", "wapi", "wapj", "wapm", "wapp", "wapr", "waps", "wapt",
-                  "wapu", "wapv", "wapy", "webc", "whit", "wig ", "winc", "winw", "wmlb", "wonu",
-                  "x700", "xda-", "xda2", "xdag", "yas-", "your", "zeto", "zte-"))) return TRUE;
-  
-        return FALSE;
     }
     /** DIBS API TOOLS END **/
 }

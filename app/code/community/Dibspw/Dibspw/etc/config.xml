@@ -24,7 +24,7 @@
 <config>
     <modules>
         <Dibspw_Dibspw>
-            <version>4.1.3</version>
+            <version>4.1.4</version>
             <depends>
                 <Mage_Paygate />
             </depends>
@@ -121,11 +121,8 @@
                 <order_status_after_payment>processing</order_status_after_payment>
                 <DIBSPW_testmode>1</DIBSPW_testmode>
                 <title>DIBS Payment Window | Secure Payment Services</title>
-                <DIBSPW_uniq>no</DIBSPW_uniq>
-                <DIBSPW_voucher>no</DIBSPW_voucher>
                 <DIBSPW_fee>no</DIBSPW_fee>
 		<DIBSPW_paytype>VISA,MC</DIBSPW_paytype>
-                <DIBSPW_method>2</DIBSPW_method>
 		<DIBSPW_lang>en_UK</DIBSPW_lang>	
 	  	<sendmailorderconfirmation>1</sendmailorderconfirmation>
                 <dibspwlogos>DIBS</dibspwlogos>
@@ -133,6 +130,7 @@
 		<DIBSPW_distr>empty</DIBSPW_distr>
                 <sort_order>0</sort_order>
                 <allowspecific>0</allowspecific>
+                <min_order_total>0.01</min_order_total>
             </Dibspw>
         </payment>
     </default>

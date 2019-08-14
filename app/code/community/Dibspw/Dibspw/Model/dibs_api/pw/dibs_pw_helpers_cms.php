@@ -126,29 +126,28 @@ class dibs_pw_helpers_cms extends Mage_Payment_Model_Method_Abstract {
 	$order->save();
     }
     
-    // Remove from stock (if used)
-    public function removeFromStock() {
-    	// Load the session object
-      	$session = Mage::getSingleton('checkout/session');
-     	$session->setDibspwStandardQuoteId($session->getQuoteId());
+    
+   /**
+    * Removes items from stock, depends on 'handlestock' module configuration option
+    * (used for successful payments)
+    * 
+    * http://www.magentocommerce.com/wiki/groups/132/protx_form_-_subtracting_stock_on_successful_payment
+    */
+    public function removeFromStock($iOrderId) {
+      	$oSession = Mage::getSingleton('checkout/session');
+     	$oSession->setDibspwStandardQuoteId($oSession->getQuoteId());
       
-      	// Load the order object
-	$order = Mage::getModel('sales/order');
-	$order->loadByIncrementId($_POST['orderid']);
-      
-// remove items from stock
-// http://www.magentocommerce.com/wiki/groups/132/protx_form_-_subtracting_stock_on_successful_payment
+	$oOrder = Mage::getModel('sales/order');
+	$oOrder->loadByIncrementId($iOrderId);
+
         if (((int)$this->getConfigData('handlestock')) == 1) {
-            $items = $order->getAllItems(); // Get all items from the order
-            if ($items) {
-                foreach($items as $item) {
-                    $quantity = $item->getQtyOrdered(); // get Qty ordered
-                    $product_id = $item->getProductId(); // get it's ID
-                    // Load the stock for this product
-                    $stock = Mage::getModel('cataloginventory/stock_item')
-                             ->loadByProduct($product_id);
-                    $stock->setQty($stock->getQty()-$quantity); // Set to new Qty            
-                    $stock->save(); // Save
+            $oItems = $oOrder->getAllItems();
+            if ($oItems) {
+                foreach($oItems as $oItem) {
+                    $oStock = Mage::getModel('cataloginventory/stock_item')
+                                 ->loadByProduct($oItem->getProductId());
+                    $oStock->setQty($oStock->getQty() - $oItem->getQtyOrdered());
+                    $oStock->save();
                     continue;                        
                 }
             }

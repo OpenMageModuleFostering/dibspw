@@ -63,15 +63,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
 			</DIBSPW_mid>
-                        <DIBSPW_method translate="label">
-                            <label>Payment Window</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>dibspw/system_config_source_paymentwindow</source_model>
-                            <sort_order>4</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </DIBSPW_method>
                         <DIBSPW_HMAC translate="label">
                             <label>HMAC Key</label>
                             <frontend_type>text</frontend_type>
@@ -107,24 +98,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </DIBSPW_capturenow>
-                        <DIBSPW_voucher translate="label">
-                            <label>Voucher Usage (Mobile PW only)</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>dibspw/System_Config_Source_Dibsyesno</source_model>
-                            <sort_order>9</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </DIBSPW_voucher>
-                        <DIBSPW_uniq translate="label">
-                            <label>Unique order ID (Mobile PW only)</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>dibspw/System_Config_Source_Dibsyesno</source_model>
-                            <sort_order>10</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </DIBSPW_uniq>
                         <DIBSPW_paytype translate="label">
                             <label>Paytype</label>
                             <frontend_type>text</frontend_type>
@@ -195,11 +168,27 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </specificcountry>
+                        <min_order_total translate="label">
+                            <label>Min. order total</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>19</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </min_order_total>
+                        <max_order_total translate="label">
+                            <label>Max. order total</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </max_order_total>
                         <sendmailorderconfirmation translate="label">
                             <label>Send Email Order Confirmation. Enabling this setting will result in an email confirmation is send to the cardholder as the payment is made.</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>19</sort_order>
+                            <sort_order>21</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
@@ -208,7 +197,7 @@
                             <label>Which logos to show</label>
                             <frontend_type>multiselect</frontend_type>
                             <source_model>dibspw/system_config_source_dibslogos</source_model>
-                            <sort_order>20</sort_order>
+                            <sort_order>22</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
@@ -217,7 +206,7 @@
                             <label>Handle stock. The quantity purchased in stock will at first be decremented as the payment is made.</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>21</sort_order>
+                            <sort_order>23</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
@@ -225,7 +214,7 @@
                         <sort_order translate="label">
                             <label>Sort Order</label>
                             <frontend_type>text</frontend_type>
-                            <sort_order>22</sort_order>
+                            <sort_order>24</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
