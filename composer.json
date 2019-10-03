@@ -1,7 +1,7 @@
 {
-    "name": "OpenMageModuleFostering\/Dibspw",
+    "name": "openmage-module-fostering\/dibspw",
     "type": "magento-module",
-    "license": "Open-Software-License-(OSL)",
+    "license": "OSL-3.0",
     "homepage": "",
     "description": "Accept all types of payments from DIBS - Secure Internet Payment Service Provider",
     "authors": [
